@@ -1,0 +1,206 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local player = Players.LocalPlayer
+
+--[[ 
+===========================================================
+       🎈 MINI-PAINEL: VIEW PLAYER & BOT (TOONS UNIVERSE) 🎈
+===========================================================
+]]
+
+-- 1. LOCALIZAÇÃO E LIMPEZA
+local playerGui = player:WaitForChild("PlayerGui")
+local coreGui = playerGui:WaitForChild("SistemaPainel_Toons")
+local painel = coreGui:WaitForChild("Panel")
+local lista = painel:WaitForChild("ListaOpcoesContainer")
+
+if lista:FindFirstChild("ViewControlCard") then
+    lista.ViewControlCard:Destroy()
+end
+
+-- 2. FUNÇÃO DE DETECÇÃO DE NPC/BOT
+local function GetDetectedBots()
+    local detectedBots = {}
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+            local isRealPlayer = Players:GetPlayerFromCharacter(obj)
+            
+            if not isRealPlayer then
+                local humanoid = obj:FindFirstChildOfClass("Humanoid")
+                if humanoid.Health > 0 and (obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")) then
+                    table.insert(detectedBots, obj)
+                end
+            end
+        end
+    end
+    
+    return detectedBots
+end
+
+_G.GetDetectedBots = GetDetectedBots
+
+-- 3. CRIAÇÃO DO CARD TOON
+local miniPainel = Instance.new("Frame")
+miniPainel.Name = "ViewControlCard"
+miniPainel.Size = UDim2.new(0.98, 0, 0, 115) 
+miniPainel.BackgroundColor3 = Color3.fromRGB(35, 30, 75)
+miniPainel.BackgroundTransparency = 0.1
+miniPainel.BorderSizePixel = 0
+miniPainel.ZIndex = lista.ZIndex + 10 
+miniPainel.Parent = lista
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = miniPainel
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2.5
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = miniPainel
+
+local strokeGradient = Instance.new("UIGradient")
+strokeGradient.Rotation = 45
+strokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 220)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 200, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 210, 100))
+})
+strokeGradient.Parent = stroke
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "VISUALIZADORES"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.FredokaOne
+title.TextSize = 15
+title.ZIndex = miniPainel.ZIndex + 1
+title.Parent = miniPainel
+
+local titleStroke = Instance.new("UIStroke")
+titleStroke.Thickness = 1.5
+titleStroke.Color = Color3.fromRGB(20, 15, 45)
+titleStroke.Parent = title
+
+-- 4. CRIAÇÃO DOS TOGGLES ESTILIZADOS
+local activeStates = {}
+
+local function CreateToggle(name, labelText, posX, loadstringUrl)
+    local container = Instance.new("Frame")
+    container.Name = name .. "Container"
+    container.Size = UDim2.new(0.45, 0, 0, 60)
+    container.Position = UDim2.new(posX, 0, 0.62, 0)
+    container.AnchorPoint = Vector2.new(0.5, 0.5)
+    container.BackgroundTransparency = 1
+    container.ZIndex = miniPainel.ZIndex + 1
+    container.Parent = miniPainel
+
+    local iconLabel = Instance.new("TextLabel")
+    iconLabel.Size = UDim2.new(1, 0, 0, 20)
+    iconLabel.Text = labelText
+    iconLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    iconLabel.Font = Enum.Font.FredokaOne
+    iconLabel.TextSize = 14
+    iconLabel.BackgroundTransparency = 1
+    iconLabel.ZIndex = miniPainel.ZIndex + 2
+    iconLabel.Parent = container
+
+    local iconStroke = Instance.new("UIStroke")
+    iconStroke.Thickness = 1.5
+    iconStroke.Color = Color3.fromRGB(20, 15, 45)
+    iconStroke.Parent = iconLabel
+
+    -- Cores dos Toggles (Inativo: Vermelho Pastel / Ativo: Verde Menta Pastel)
+    local colorInactiveBase = Color3.fromRGB(70, 30, 45)
+    local colorInactiveStroke = Color3.fromRGB(220, 80, 100)
+    local colorActiveBase = Color3.fromRGB(30, 75, 55)
+    local colorActiveStroke = Color3.fromRGB(100, 220, 150)
+
+    local btnBase = Instance.new("TextButton")
+    btnBase.Size = UDim2.new(0, 54, 0, 26)
+    btnBase.Position = UDim2.new(0.5, 0, 0.75, 0)
+    btnBase.AnchorPoint = Vector2.new(0.5, 0.5)
+    btnBase.BackgroundColor3 = colorInactiveBase
+    btnBase.Text = ""
+    btnBase.AutoButtonColor = false
+    btnBase.ZIndex = miniPainel.ZIndex + 2
+    btnBase.Parent = container
+
+    Instance.new("UICorner", btnBase).CornerRadius = UDim.new(1, 0)
+    
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Thickness = 2
+    btnStroke.Color = colorInactiveStroke
+    btnStroke.Parent = btnBase
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 20, 0, 20)
+    knob.Position = UDim2.new(0.1, 0, 0.5, 0)
+    knob.AnchorPoint = Vector2.new(0, 0.5)
+    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.ZIndex = btnBase.ZIndex + 1
+    knob.Parent = btnBase
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+    activeStates[name] = false
+
+    btnBase.MouseButton1Click:Connect(function()
+        activeStates[name] = not activeStates[name]
+        local isActive = activeStates[name]
+
+        if _G.NotifyElite then
+            local botCount = isActive and name == "BotView" and (" (" .. #GetDetectedBots() .. " detectados)") or ""
+            _G.NotifyElite("VISUALIZADOR", labelText .. " " .. (isActive and "ATIVADO" or "DESATIVADO") .. botCount .. "!", isActive)
+        end
+
+        local targetPos = isActive and UDim2.new(0.9, -20, 0.5, 0) or UDim2.new(0.1, 0, 0.5, 0)
+        
+        -- Animações com física Toon (Pop/Elastic)
+        TweenService:Create(knob, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+        TweenService:Create(btnBase, TweenInfo.new(0.3), {BackgroundColor3 = isActive and colorActiveBase or colorInactiveBase}):Play()
+        TweenService:Create(btnStroke, TweenInfo.new(0.3), {Color = isActive and colorActiveStroke or colorInactiveStroke}):Play()
+
+        _G[name .. "State"] = isActive
+
+        task.spawn(function()
+            local success, err = pcall(function()
+                loadstring(game:HttpGet(loadstringUrl))()
+            end)
+            if not success then
+                warn("Erro ao carregar módulo " .. name .. ": " .. tostring(err))
+            end
+        end)
+    end)
+end
+
+-- 5. CONFIGURAÇÃO DOS TOGGLES
+CreateToggle("PlayerView", "👤 Player", 0.28, "https://raw.githubusercontent.com/kauericardo159-hub/Painel-Administrativo/refs/heads/main/SYSTEM/SYSTEM%3A%20View%20Player")
+CreateToggle("BotView", "🤖 Bot", 0.72, "https://raw.githubusercontent.com/kauericardo159-hub/Painel-Administrativo/refs/heads/main/SYSTEM/SYSTEM%3A%20View%20Bot")
+
+-- 6. ANIMAÇÃO DE ENTRADA (Cartoon Back Out)
+local function animateEntry()
+    miniPainel.Position = UDim2.new(1.2, 0, 0, 0)
+    miniPainel.BackgroundTransparency = 1
+    
+    task.wait(0.2)
+    TweenService:Create(miniPainel, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 0.1
+    }):Play()
+end
+
+-- Rotação Contínua da Borda Mágica
+task.spawn(function()
+    while miniPainel.Parent do
+        local tween = TweenService:Create(strokeGradient, TweenInfo.new(5, Enum.EasingStyle.Linear), {Rotation = 405})
+        tween:Play()
+        tween.Completed:Wait()
+        strokeGradient.Rotation = 45
+    end
+end)
+
+animateEntry()
+print("✨ MiniPanel View Player & Bot Toons carregado!")
