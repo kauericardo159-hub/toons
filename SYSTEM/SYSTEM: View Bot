@@ -1,10 +1,9 @@
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 🎈 SYSTEM VIEW BOT DEFINITIVE (TOONS STYLE) 🎈
+-- 🎈 SYSTEM VIEW BOT ULTIMATE (TOONS STYLE) 🎈
 -- ==========================================
 if _G.SystemViewBotActive then
     _G.SystemViewBotActive = false
@@ -29,13 +28,13 @@ if _G.SystemViewBotActive then
 end
 
 _G.SystemViewBotActive = true
-print("✨ [TOONS] View Bot: ATIVADO")
+print("✨ [TOONS] View Bot: ATIVADO (Detecção Perfeita)")
 
 -- ==========================================
 -- CONFIGURAÇÕES VISUAIS
 -- ==========================================
-local MAX_DISTANCE = 600
-local FADE_START = 450
+local MAX_DISTANCE = 650
+local FADE_START = 500
 
 local OUTLINE_COLOR = Color3.fromRGB(255, 120, 220) -- Rosa Magenta
 local BOT_NAME_COLOR = "#FFD264"                     -- Amarelo Pastel
@@ -43,23 +42,24 @@ local BOT_STROKE_COLOR = Color3.fromRGB(20, 15, 45)  -- Roxo Escuro Contorno
 local DIST_COLOR = "#78C8FF"                         -- Azul Pastel
 local HP_COLOR = "#FF6496"                           -- Rosa Pastel
 
--- 📜 LISTA DE INIMIGOS E TENTÁCULOS (Inclui variações de escrita do jogo)
+-- 📜 LISTA DE INIMIGOS, COBRAS E ENTIDADES DO TETO/BURACO
 local MONSTER_NAMES = {
-    -- Inimigos da Imagem e Variações
+    -- Infectados principais da loja/jogo
     "teipo", "squiddle", "selena", "patcher",
     "koi", "g&r", "fizzle", "discard",
-    "copper", "phantasia",
+    "copper", "phantasia", "nimbus",
 
-    -- Tentáculos
-    "tentacle", "tentacles", "tentacled",
+    -- Inimigos de buraco/teto (Cobra e variações)
+    "snake", "serpent", "hole", "ceiling", "vent",
+    "tentacle", "tentacles", "tentacled", "arm", "limb",
 
-    -- Outras entidades reais de ataque
-    "infected", "chaser", "killer"
+    -- Outras entidades hostis do jogo
+    "infected", "chaser", "killer", "monster", "bot", "enemy"
 }
 
--- ⛔ BLOQUEIO RIGOROSO DE FALSOS POSITIVOS (Câmeras, Barreiras, Elementos do Sistema)
+-- ⛔ BLOQUEIO COMPLETO E IMPEDIMENTO DE FALSOS POSITIVOS
 local IGNORED_TERMS = {
-    "camerarig", "camera", "barrier", "monsterbarrier", "rig",
+    "humanoidcamerarig", "camerarig", "camera", "monsterbarrier", "barrier", "rig",
     "npc", "vendor", "shop", "merchant", "dummy", "guide", "trader",
     "spawn", "door", "wall", "floor", "map", "checkpoint", "light",
     "desk", "table", "chair", "item", "part", "folder", "value"
@@ -73,7 +73,7 @@ _G.BotCacheViewBot = {}
 local botCache = _G.BotCacheViewBot
 
 -- ==========================================
--- ESTRUTURA VISUAL
+-- ESTRUTURA VISUAL DA ESP
 -- ==========================================
 local function createVisuals(entity)
     local data = {}
@@ -129,19 +129,19 @@ end
 local function isBot(obj)
     if not obj or not obj.Parent then return false end
     
-    -- Ignora o próprio jogador e outros players reais
+    -- Ignora o jogador local e outros players reais
     if Players:GetPlayerFromCharacter(obj) or obj == localPlayer.Character then return false end
     
     local nameLower = string.lower(obj.Name)
     
-    -- 1. Filtro absoluto: Se o nome contiver qualquer palavra da lista de bloqueio, ignora
+    -- PASSO 1: Bloqueia IMEDIATAMENTE qualquer falsos positivos (Câmera, Barreira, etc.)
     for _, ignored in ipairs(IGNORED_TERMS) do
         if string.find(nameLower, ignored) then 
             return false 
         end
     end
 
-    -- 2. Checagem estrita por infectados/tentáculos
+    -- PASSO 2: Aceita se o nome for de um monstro, infectado, cobra ou tentáculo
     for _, monster in ipairs(MONSTER_NAMES) do
         if string.find(nameLower, monster) then
             return true
@@ -159,7 +159,7 @@ local function checkAndAddEntity(obj)
 end
 
 -- ==========================================
--- MONITORAMENTO DO MAPA
+-- MONITORAMENTO E VARREDURA DO MAPA
 -- ==========================================
 task.spawn(function()
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -222,7 +222,6 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
                 
                 local hpText = hum and math.floor(hum.Health) or "100"
                 
-                -- Mantém o nome exato do jogo (como TDiscardd)
                 vis.NameLabel.Text = string.format('<font color="%s">👾 %s</font>', BOT_NAME_COLOR, botEntity.Name)
                 vis.StatsLabel.Text = string.format('<font color="%s">📍 %dm</font>  |  <font color="%s">💖 %s</font>', DIST_COLOR, math.floor(dist), HP_COLOR, tostring(hpText))
             else
