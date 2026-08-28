@@ -178,7 +178,7 @@ end
 
 -- 5. CONFIGURAÇÃO DOS TOGGLES
 CreateToggle("PlayerView", "👤 Player", 0.28, "https://raw.githubusercontent.com/kauericardo159-hub/Painel-Administrativo/refs/heads/main/SYSTEM/SYSTEM%3A%20View%20Player")
-CreateToggle("BotView", "🤖 Bot", 0.72, "https://raw.githubusercontent.com/kauericardo159-hub/Painel-Administrativo/refs/heads/main/SYSTEM/SYSTEM%3A%20View%20Bot")
+CreateToggle("BotView", "🤖 Bot", 0.72, "https://raw.githubusercontent.com/kauericardo159-hub/toons/refs/heads/main/SYSTEM/SYSTEM%3A%20View%20Bot")
 
 -- 6. ANIMAÇÃO DE ENTRADA (Cartoon Back Out)
 local function animateEntry()
