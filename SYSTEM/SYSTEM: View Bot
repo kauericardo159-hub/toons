@@ -3,7 +3,7 @@ local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 🎈 SISTEMA DE TOGGLE VIEW BOT (TOONS STYLE) 🎈
+-- 🎈 SYSTEM VIEW BOT ULTIMATE (TOONS STYLE) 🎈
 -- ==========================================
 if _G.SystemViewBotActive then
     _G.SystemViewBotActive = false
@@ -28,13 +28,13 @@ if _G.SystemViewBotActive then
 end
 
 _G.SystemViewBotActive = true
-print("✨ [TOONS] View Bot: ATIVADO (Detecção Ativa)")
+print("✨ [TOONS] View Bot: ATIVADO (Detecção Avançada)")
 
 -- ==========================================
 -- CONFIGURAÇÕES VISUAIS & DISTÂNCIA
 -- ==========================================
-local MAX_DISTANCE = 500
-local FADE_START = 350
+local MAX_DISTANCE = 600
+local FADE_START = 450
 
 -- Cores do Tema Toons Universe
 local OUTLINE_COLOR = Color3.fromRGB(255, 120, 220) -- Rosa Magenta
@@ -43,25 +43,28 @@ local BOT_STROKE_COLOR = Color3.fromRGB(20, 15, 45)  -- Roxo Escuro Contorno
 local DIST_COLOR = "#78C8FF"                         -- Azul Pastel
 local HP_COLOR = "#FF6496"                           -- Rosa Pastel
 
--- 📜 LISTA DE INIMIGOS (Nomes da imagem com prefixo T e variações)
+-- 📜 LISTA DE INIMIGOS E TENTÁCULOS
 local MONSTER_NAMES = {
-    -- Inimigos da imagem (Com prefixo T)
+    -- Nomes Específicos com/sem Prefixo T
     "tteipo", "tsquiddle", "tselena", "tpatcher",
     "tkoi", "tg&r", "tfizzle", "tdiscard",
     "tcopper", "tphantasia",
-    
-    -- Versões sem T (Garante detecção se o jogo mudar o nome)
     "teipo", "squiddle", "selena", "patcher",
     "koi", "g&r", "fizzle", "discard",
     "copper", "phantasia",
 
-    -- Outras entidades/inimigos padrão
-    "monster", "infected", "chaser", "enemy", "bot"
+    -- Tentáculos (Adicionado em inglês)
+    "tentacle", "tentacles", "tentacled", "arm", "limb",
+
+    -- Nomes Genéricos de Inimigos/Monstros
+    "monster", "infected", "chaser", "enemy", "bot", "killer", "boss"
 }
 
--- NPCs e Elementos Ignorados
-local IGNORED_NAMES = {
-    "npc", "vendor", "shop", "merchant", "dummy", "guide", "trader"
+-- ⛔ FILTRO ANTI-FALSOS POSITIVOS (E elementos de cenário/mapa)
+local IGNORED_TERMS = {
+    "npc", "vendor", "shop", "merchant", "dummy", "guide", "trader",
+    "spawn", "door", "wall", "floor", "map", "checkpoint", "light",
+    "part", "folder", "camera", "desk", "table", "chair", "item"
 }
 
 _G.SystemViewBotFolder = Instance.new("Folder")
@@ -72,30 +75,27 @@ _G.BotCacheViewBot = {}
 local botCache = _G.BotCacheViewBot
 
 -- ==========================================
--- CRIAÇÃO DE ELEMENTOS VISUAIS (TOON ESTILO)
+-- ESTRUTURA VISUAL DA HIGHLIGHT E TEXTO
 -- ==========================================
 local function createVisuals(entity)
     local data = {}
     
-    -- Contorno Mágico
     local hl = Instance.new("Highlight")
     hl.Name = "BotOutline"
     hl.FillColor = Color3.fromRGB(255, 120, 220)
-    hl.FillTransparency = 0.85
+    hl.FillTransparency = 0.8
     hl.OutlineColor = OUTLINE_COLOR
     hl.OutlineTransparency = 0
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     
-    -- Placa Flutuante de Estatísticas
     local bg = Instance.new("BillboardGui")
     bg.Name = "BotInfo"
-    bg.Size = UDim2.new(0, 220, 0, 50)
-    bg.StudsOffset = Vector3.new(0, 3, 0)
+    bg.Size = UDim2.new(0, 240, 0, 55)
+    bg.StudsOffset = Vector3.new(0, 3.5, 0)
     bg.AlwaysOnTop = true
     bg.LightInfluence = 0
     bg.Parent = _G.SystemViewBotFolder
     
-    -- Nome do Inimigo
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
     nameLabel.BackgroundTransparency = 1
@@ -106,14 +106,13 @@ local function createVisuals(entity)
     nameLabel.RichText = true
     nameLabel.Parent = bg
     
-    -- Status (Vida + Distância)
     local statsLabel = Instance.new("TextLabel")
     statsLabel.Size = UDim2.new(1, 0, 0.5, 0)
     statsLabel.Position = UDim2.new(0, 0, 0.5, 0)
     statsLabel.BackgroundTransparency = 1
     statsLabel.Font = Enum.Font.FredokaOne
     statsLabel.TextSize = 14
-    statsLabel.TextStrokeTransparency = 0.2
+    statsLabel.TextStrokeTransparency = 0.1
     statsLabel.TextStrokeColor3 = BOT_STROKE_COLOR
     statsLabel.RichText = true
     statsLabel.Parent = bg
@@ -127,35 +126,52 @@ local function createVisuals(entity)
 end
 
 -- ==========================================
--- LÓGICA DE DETECÇÃO POR NOME
+-- LÓGICA DE DETECÇÃO PRECISA (RIGOROSA)
 -- ==========================================
 local function isBot(obj)
+    if not obj or not obj.Parent then return false end
+    
+    -- Ignora jogadores reais totalmente
     if Players:GetPlayerFromCharacter(obj) or obj == localPlayer.Character then return false end
+    
+    -- Se for parte solta de um personagem/modelo já catalogado, ignora
+    if obj:IsA("BasePart") and obj.Parent and obj.Parent:IsA("Model") and botCache[obj.Parent] then
+        return false
+    end
     
     local nameLower = string.lower(obj.Name)
     
-    -- Checa lista de ignorados
-    for _, ignored in ipairs(IGNORED_NAMES) do
-        if string.find(nameLower, ignored) then return false end
-    end
-    
-    -- Regra 1: Início do nome com letra "T" (ex: TTeipo, TSquiddle)
-    if string.sub(nameLower, 1, 1) == "t" and #nameLower > 2 then
-        for _, monster in ipairs(MONSTER_NAMES) do
-            if string.find(nameLower, monster) then return true end
+    -- 1. Checa a lista de termos estritamente proibidos (evita detectar cenário)
+    for _, ignored in ipairs(IGNORED_TERMS) do
+        if nameLower == ignored or string.find(nameLower, "^" .. ignored) then 
+            return false 
         end
     end
-    
-    -- Regra 2: Combinações com a lista geral de monstros
+
+    -- 2. Checagem por nome conhecido (Monstros ou Tentáculos)
+    local matchesName = false
     for _, monster in ipairs(MONSTER_NAMES) do
-        if string.find(nameLower, monster) then return true end
+        if string.find(nameLower, monster) then
+            matchesName = true
+            break
+        end
     end
-    
-    -- Regra 3: Models genéricos que possuam Humanoid ativo
+
+    -- Se bateu com a lista de nomes, valida se tem presença física real
+    if matchesName then
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            return true
+        end
+    end
+
+    -- 3. Validação de Models dinâmicos do jogo (com Humanoid/Inimigo sem nome mapeado)
     if obj:IsA("Model") then
         local hum = obj:FindFirstChildOfClass("Humanoid")
-        if hum and hum.Health > 0 and hum.WalkSpeed > 0 then
-            return true
+        if hum then
+            -- Garante que não é um item do cenário/loja inerte
+            if hum.Health > 0 and hum.MaxHealth > 0 then
+                return true
+            end
         end
     end
     
@@ -163,15 +179,14 @@ local function isBot(obj)
 end
 
 local function checkAndAddEntity(obj)
-    if (obj:IsA("Model") or obj:IsA("BasePart")) and not botCache[obj] then
-        if isBot(obj) then
-            botCache[obj] = createVisuals(obj)
-        end
+    if not _G.SystemViewBotActive then return end
+    if not botCache[obj] and isBot(obj) then
+        botCache[obj] = createVisuals(obj)
     end
 end
 
 -- ==========================================
--- THREAD 1: DETECÇÃO DE INIMIGOS NO MAPA
+-- THREAD 1: VARREDURA E MONITORAMENTO DO MAPA
 -- ==========================================
 task.spawn(function()
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -183,7 +198,7 @@ end)
 _G.SystemViewBotAddedConn = workspace.DescendantAdded:Connect(function(descendant)
     if not _G.SystemViewBotActive then return end
     
-    task.delay(0.2, function()
+    task.delay(0.15, function()
         if descendant and descendant.Parent then
             checkAndAddEntity(descendant)
         end
@@ -191,15 +206,16 @@ _G.SystemViewBotAddedConn = workspace.DescendantAdded:Connect(function(descendan
 end)
 
 -- ==========================================
--- THREAD 2: LOOP DE ATUALIZAÇÃO E RENDER
+-- THREAD 2: RENDERIZAÇÃO E ATUALIZAÇÃO
 -- ==========================================
 _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
     local myChar = localPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local myHRP = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Head"))
     
     if not myHRP then return end
 
     for botEntity, vis in pairs(botCache) do
+        -- Remove do cache se foi destruído pelo jogo
         if not botEntity or not botEntity.Parent then
             vis.Highlight:Destroy()
             vis.UI:Destroy()
@@ -207,7 +223,8 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
             continue
         end
 
-        local head = botEntity:IsA("BasePart") and botEntity
+        -- Tenta encontrar a melhor parte para ancorar a UI
+        local targetPart = botEntity:IsA("BasePart") and botEntity
             or botEntity:FindFirstChild("Head") 
             or botEntity:FindFirstChild("HumanoidRootPart") 
             or botEntity.PrimaryPart 
@@ -216,8 +233,8 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
         local hum = botEntity:FindFirstChildOfClass("Humanoid")
         local isAlive = hum and (hum.Health > 0) or (not hum)
         
-        if head and isAlive then
-            local dist = (myHRP.Position - head.Position).Magnitude
+        if targetPart and isAlive then
+            local dist = (myHRP.Position - targetPart.Position).Magnitude
             
             if dist <= MAX_DISTANCE then
                 local fade = math.clamp((dist - FADE_START) / (MAX_DISTANCE - FADE_START), 0, 1)
@@ -225,7 +242,7 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
                 vis.Highlight.Parent = botEntity
                 vis.Highlight.OutlineTransparency = fade
                 
-                vis.UI.Adornee = head
+                vis.UI.Adornee = targetPart
                 vis.UI.Enabled = true
                 
                 vis.NameLabel.TextStrokeTransparency = fade
@@ -233,15 +250,18 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
                 vis.NameLabel.TextTransparency = fade
                 vis.StatsLabel.TextTransparency = fade
                 
-                local hpText = hum and math.floor(hum.Health) or "100"
+                local hpText = hum and math.floor(hum.Health) or "N/A"
                 
-                -- Limpeza do nome para exibição na UI (remove o 'T' inicial para ficar limpo)
-                local displayName = botEntity.Name
-                if string.sub(string.lower(displayName), 1, 1) == "t" then
-                    displayName = string.sub(displayName, 2)
+                -- Formatação limpa do nome do bot/tentáculo
+                local rawName = botEntity.Name
+                local displayName = rawName
+                
+                -- Se o nome começa com 'T' e tem mais de 2 letras (Ex: TTeipo -> Teipo)
+                if string.sub(string.lower(rawName), 1, 1) == "t" and #rawName > 2 then
+                    displayName = string.sub(rawName, 2)
                 end
                 
-                vis.NameLabel.Text = string.format('<font color="%s">⭐ %s</font>', BOT_NAME_COLOR, string.upper(displayName))
+                vis.NameLabel.Text = string.format('<font color="%s">👾 %s</font>', BOT_NAME_COLOR, string.upper(displayName))
                 vis.StatsLabel.Text = string.format('<font color="%s">📍 %dm</font>  |  <font color="%s">💖 %s</font>', DIST_COLOR, math.floor(dist), HP_COLOR, tostring(hpText))
             else
                 vis.Highlight.Parent = nil
@@ -253,3 +273,4 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
