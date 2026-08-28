@@ -1,9 +1,10 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local localPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 🎈 SYSTEM VIEW BOT ULTIMATE (TOONS STYLE) 🎈
+-- 🎈 SYSTEM VIEW BOT ULTIMATE (MONSTERFOLDER) 🎈
 -- ==========================================
 if _G.SystemViewBotActive then
     _G.SystemViewBotActive = false
@@ -28,41 +29,36 @@ if _G.SystemViewBotActive then
 end
 
 _G.SystemViewBotActive = true
-print("✨ [TOONS] View Bot: ATIVADO (Detecção Perfeita)")
+print("✨ [TOONS] View Bot: ATIVADO (Detecção Direta MonsterFolder)")
 
 -- ==========================================
--- CONFIGURAÇÕES VISUAIS
+-- CONFIGURAÇÕES VISUAIS & DISTÂNCIA
 -- ==========================================
-local MAX_DISTANCE = 650
-local FADE_START = 500
+local MAX_DISTANCE = 600
+local FADE_START = 450
 
+-- Cores do Tema Toons Universe
 local OUTLINE_COLOR = Color3.fromRGB(255, 120, 220) -- Rosa Magenta
 local BOT_NAME_COLOR = "#FFD264"                     -- Amarelo Pastel
 local BOT_STROKE_COLOR = Color3.fromRGB(20, 15, 45)  -- Roxo Escuro Contorno
 local DIST_COLOR = "#78C8FF"                         -- Azul Pastel
 local HP_COLOR = "#FF6496"                           -- Rosa Pastel
 
--- 📜 LISTA DE INIMIGOS, COBRAS E ENTIDADES DO TETO/BURACO
-local MONSTER_NAMES = {
-    -- Infectados principais da loja/jogo
-    "teipo", "squiddle", "selena", "patcher",
-    "koi", "g&r", "fizzle", "discard",
-    "copper", "phantasia", "nimbus",
-
-    -- Inimigos de buraco/teto (Cobra e variações)
-    "snake", "serpent", "hole", "ceiling", "vent",
-    "tentacle", "tentacles", "tentacled", "arm", "limb",
-
-    -- Outras entidades hostis do jogo
-    "infected", "chaser", "killer", "monster", "bot", "enemy"
-}
-
--- ⛔ BLOQUEIO COMPLETO E IMPEDIMENTO DE FALSOS POSITIVOS
-local IGNORED_TERMS = {
-    "humanoidcamerarig", "camerarig", "camera", "monsterbarrier", "barrier", "rig",
-    "npc", "vendor", "shop", "merchant", "dummy", "guide", "trader",
-    "spawn", "door", "wall", "floor", "map", "checkpoint", "light",
-    "desk", "table", "chair", "item", "part", "folder", "value"
+-- 📜 DICIONÁRIO DE NOMES FORMATADOS
+local NAME_MAP = {
+    ["tyellowsnake"] = "Yellow Snake", ["yellowsnaek"] = "Yellow Snake",
+    ["tbluesnake"] = "Blue Snake",     ["bluesnaek"] = "Blue Snake",
+    ["tteipo"] = "Teipo",             ["teipo"] = "Teipo",
+    ["tsquiddle"] = "Squiddle",       ["squiddle"] = "Squiddle",
+    ["tselena"] = "Selena",           ["selena"] = "Selena",
+    ["tpatcher"] = "Patcher",         ["patcher"] = "Patcher",
+    ["tkoi"] = "Koi",                 ["koi"] = "Koi",
+    ["tg&r"] = "G&R",                 ["g&r"] = "G&R",
+    ["tfizzle"] = "Fizzle",           ["fizzle"] = "Fizzle",
+    ["tdiscard"] = "Discard",         ["discard"] = "Discard", ["tdiscardd"] = "Discard",
+    ["tcopper"] = "Copper",           ["copper"] = "Copper",
+    ["tphantasia"] = "Phantasia",     ["phantasia"] = "Phantasia",
+    ["tentacle"] = "Tentacle",        ["tentacles"] = "Tentacle"
 }
 
 _G.SystemViewBotFolder = Instance.new("Folder")
@@ -73,9 +69,9 @@ _G.BotCacheViewBot = {}
 local botCache = _G.BotCacheViewBot
 
 -- ==========================================
--- ESTRUTURA VISUAL DA ESP
+-- ESTRUTURA VISUAL DA HIGHLIGHT E TEXTO
 -- ==========================================
-local function createVisuals(entity)
+local function createVisuals()
     local data = {}
     
     local hl = Instance.new("Highlight")
@@ -124,54 +120,56 @@ local function createVisuals(entity)
 end
 
 -- ==========================================
--- LÓGICA DE DETECÇÃO FILTRADA
+-- TRATAMENTO DE NOME
 -- ==========================================
-local function isBot(obj)
-    if not obj or not obj.Parent then return false end
-    
-    -- Ignora o jogador local e outros players reais
-    if Players:GetPlayerFromCharacter(obj) or obj == localPlayer.Character then return false end
-    
+local function getFormattedName(obj)
     local nameLower = string.lower(obj.Name)
     
-    -- PASSO 1: Bloqueia IMEDIATAMENTE qualquer falsos positivos (Câmera, Barreira, etc.)
-    for _, ignored in ipairs(IGNORED_TERMS) do
-        if string.find(nameLower, ignored) then 
-            return false 
-        end
+    -- Busca no dicionário direto
+    if NAME_MAP[nameLower] then
+        return NAME_MAP[nameLower]
     end
-
-    -- PASSO 2: Aceita se o nome for de um monstro, infectado, cobra ou tentáculo
-    for _, monster in ipairs(MONSTER_NAMES) do
-        if string.find(nameLower, monster) then
-            return true
-        end
+    
+    -- Se o nome começar com 'T' e não estiver no mapa, remove o 'T'
+    if string.sub(nameLower, 1, 1) == "t" and #nameLower > 2 then
+        local clean = string.sub(obj.Name, 2)
+        return clean:sub(1,1):upper() .. clean:sub(2)
     end
-
-    return false
+    
+    return obj.Name
 end
 
 local function checkAndAddEntity(obj)
-    if not _G.SystemViewBotActive then return end
-    if not botCache[obj] and isBot(obj) then
-        botCache[obj] = createVisuals(obj)
+    if not _G.SystemViewBotActive or botCache[obj] then return end
+    
+    -- Evita marcar a pasta 'MonsterFolder' ou pastas organizadoras como 'TSnakes'
+    if obj:IsA("Folder") or obj:IsA("Configuration") then return end
+    
+    -- Aceita Models ou Partes físicas reais dentro da estrutura de monstros
+    if obj:IsA("Model") or obj:IsA("BasePart") then
+        local data = createVisuals()
+        data.CleanName = getFormattedName(obj)
+        botCache[obj] = data
     end
 end
 
 -- ==========================================
--- MONITORAMENTO E VARREDURA DO MAPA
+-- THREAD 1: MONITORAMENTO DA MONSTERFOLDER
 -- ==========================================
+local monsterFolder = Workspace:FindFirstChild("MonsterFolder") or Workspace
+
 task.spawn(function()
-    for _, obj in ipairs(workspace:GetDescendants()) do
+    -- Varre a MonsterFolder especificamente (ou Workspace caso ela não exista)
+    for _, obj in ipairs(monsterFolder:GetDescendants()) do
         if not _G.SystemViewBotActive then break end
         checkAndAddEntity(obj)
     end
 end)
 
-_G.SystemViewBotAddedConn = workspace.DescendantAdded:Connect(function(descendant)
+_G.SystemViewBotAddedConn = monsterFolder.DescendantAdded:Connect(function(descendant)
     if not _G.SystemViewBotActive then return end
     
-    task.delay(0.15, function()
+    task.delay(0.1, function()
         if descendant and descendant.Parent then
             checkAndAddEntity(descendant)
         end
@@ -179,7 +177,7 @@ _G.SystemViewBotAddedConn = workspace.DescendantAdded:Connect(function(descendan
 end)
 
 -- ==========================================
--- LOOP DE RENDERIZAÇÃO
+-- THREAD 2: RENDERIZAÇÃO
 -- ==========================================
 _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
     local myChar = localPlayer.Character
@@ -201,9 +199,10 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
             or botEntity.PrimaryPart 
             or botEntity:FindFirstChildWhichIsA("BasePart")
             
-        local hum = botEntity:FindFirstChildOfClass("Humanoid")
+        local hum = botEntity:FindFirstChildOfClass("Humanoid") or (botEntity.Parent and botEntity.Parent:FindFirstChildOfClass("Humanoid"))
+        local isAlive = hum and (hum.Health > 0) or (not hum)
         
-        if targetPart then
+        if targetPart and isAlive then
             local dist = (myHRP.Position - targetPart.Position).Magnitude
             
             if dist <= MAX_DISTANCE then
@@ -222,7 +221,7 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
                 
                 local hpText = hum and math.floor(hum.Health) or "100"
                 
-                vis.NameLabel.Text = string.format('<font color="%s">👾 %s</font>', BOT_NAME_COLOR, botEntity.Name)
+                vis.NameLabel.Text = string.format('<font color="%s">🐍 %s</font>', BOT_NAME_COLOR, string.upper(vis.CleanName))
                 vis.StatsLabel.Text = string.format('<font color="%s">📍 %dm</font>  |  <font color="%s">💖 %s</font>', DIST_COLOR, math.floor(dist), HP_COLOR, tostring(hpText))
             else
                 vis.Highlight.Parent = nil
@@ -234,3 +233,4 @@ _G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
