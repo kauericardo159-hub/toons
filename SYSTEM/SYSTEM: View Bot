@@ -1,10 +1,9 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 local localPlayer = Players.LocalPlayer
 
 -- ==========================================
--- 🎈 SYSTEM VIEW BOT ULTIMATE (MONSTERFOLDER) 🎈
+-- 🎈 SISTEMA DE TOGGLE VIEW BOT (TOONS STYLE) 🎈
 -- ==========================================
 if _G.SystemViewBotActive then
     _G.SystemViewBotActive = false
@@ -24,41 +23,57 @@ if _G.SystemViewBotActive then
         _G.SystemViewBotFolder:Destroy()
     end
     
-    print("✨ [TOONS] View Bot: DESATIVADO E LIMPO")
+    print("✨ [SYSTEM] View Bot: DESATIVADO E LIMPO")
     return
 end
 
 _G.SystemViewBotActive = true
-print("✨ [TOONS] View Bot: ATIVADO (Detecção Direta MonsterFolder)")
+print("✨ [SYSTEM] View Bot: ATIVADO (Detecção em Tempo Real)")
 
 -- ==========================================
--- CONFIGURAÇÕES VISUAIS & DISTÂNCIA
+-- CONFIGURAÇÕES VISUAIS & CORES
 -- ==========================================
-local MAX_DISTANCE = 600
+local MAX_DISTANCE = 650
 local FADE_START = 450
 
--- Cores do Tema Toons Universe
-local OUTLINE_COLOR = Color3.fromRGB(255, 120, 220) -- Rosa Magenta
+-- Cores
 local BOT_NAME_COLOR = "#FFD264"                     -- Amarelo Pastel
 local BOT_STROKE_COLOR = Color3.fromRGB(20, 15, 45)  -- Roxo Escuro Contorno
+local OUTLINE_COLOR = Color3.fromRGB(255, 120, 220) -- Rosa Magenta
 local DIST_COLOR = "#78C8FF"                         -- Azul Pastel
 local HP_COLOR = "#FF6496"                           -- Rosa Pastel
 
--- 📜 DICIONÁRIO DE NOMES FORMATADOS
-local NAME_MAP = {
-    ["tyellowsnake"] = "Yellow Snake", ["yellowsnaek"] = "Yellow Snake",
-    ["tbluesnake"] = "Blue Snake",     ["bluesnaek"] = "Blue Snake",
-    ["tteipo"] = "Teipo",             ["teipo"] = "Teipo",
-    ["tsquiddle"] = "Squiddle",       ["squiddle"] = "Squiddle",
-    ["tselena"] = "Selena",           ["selena"] = "Selena",
-    ["tpatcher"] = "Patcher",         ["patcher"] = "Patcher",
-    ["tkoi"] = "Koi",                 ["koi"] = "Koi",
-    ["tg&r"] = "G&R",                 ["g&r"] = "G&R",
-    ["tfizzle"] = "Fizzle",           ["fizzle"] = "Fizzle",
-    ["tdiscard"] = "Discard",         ["discard"] = "Discard", ["tdiscardd"] = "Discard",
-    ["tcopper"] = "Copper",           ["copper"] = "Copper",
-    ["tphantasia"] = "Phantasia",     ["phantasia"] = "Phantasia",
-    ["tentacle"] = "Tentacle",        ["tentacles"] = "Tentacle"
+-- 📜 LISTA DE INIMIGOS E SEUS EMOJIS EXCLUSIVOS
+-- Suporta tanto a versão com "T" no início quanto a versão sem "T"
+local MONSTER_EMOJIS = {
+    -- Inimigos Específicos da Imagem
+    ["tteipo"] = "🎭", ["teipo"] = "🎭",
+    ["tsquiddle"] = "🐙", ["squiddle"] = "🐙",
+    ["tselena"] = "🌙", ["selena"] = "🌙",
+    ["tpatcher"] = "🩺", ["patcher"] = "🩺",
+    ["tkoi"] = "🐟", ["koi"] = "🐟",
+    ["tg&r"] = "🐍", ["g&r"] = "🐍",
+    ["tfizzle"] = "⚡", ["fizzle"] = "⚡",
+    ["tdiscard"] = "🗑️", ["tdiscardd"] = "🗑️", ["discard"] = "🗑️",
+    ["tcopper"] = "🔥", ["copper"] = "🔥",
+    ["tphantasia"] = "🦄", ["phantasia"] = "🦄",
+    ["tnimbus"] = "☁️", ["nimbus"] = "☁️",
+
+    -- Cobra, Teto e Tentáculos
+    ["snake"] = "🐍", ["serpent"] = "🐍",
+    ["tentacle"] = "🦑", ["tentacles"] = "🦑", ["tentacled"] = "🦑",
+    ["hole"] = "🕳️", ["ceiling"] = "🕳️", ["vent"] = "🕳️",
+
+    -- Outras entidades
+    ["infected"] = "☣️", ["monster"] = "👾", ["chaser"] = "🏃", ["killer"] = "💀", ["bot"] = "🤖"
+}
+
+-- ⛔ BLOQUEIO COMPLETO DE FALSOS POSITIVOS (Câmeras, Barreiras do Mapa, etc.)
+local IGNORED_NAMES = {
+    "humanoidcamerarig", "camerarig", "camera", "monsterbarrier", "barrier", "rig",
+    "npc", "vendor", "shop", "merchant", "dummy", "guide", "trader",
+    "spawn", "door", "wall", "floor", "map", "checkpoint", "light",
+    "desk", "table", "chair", "item", "part", "folder", "value"
 }
 
 _G.SystemViewBotFolder = Instance.new("Folder")
@@ -69,9 +84,9 @@ _G.BotCacheViewBot = {}
 local botCache = _G.BotCacheViewBot
 
 -- ==========================================
--- ESTRUTURA VISUAL DA HIGHLIGHT E TEXTO
+-- FUNÇÕES AUXILIARES
 -- ==========================================
-local function createVisuals()
+local function createVisuals(entity)
     local data = {}
     
     local hl = Instance.new("Highlight")
@@ -84,8 +99,8 @@ local function createVisuals()
     
     local bg = Instance.new("BillboardGui")
     bg.Name = "BotInfo"
-    bg.Size = UDim2.new(0, 240, 0, 55)
-    bg.StudsOffset = Vector3.new(0, 3.5, 0)
+    bg.Size = UDim2.new(0, 230, 0, 50)
+    bg.StudsOffset = Vector3.new(0, 3, 0)
     bg.AlwaysOnTop = true
     bg.LightInfluence = 0
     bg.Parent = _G.SystemViewBotFolder
@@ -105,6 +120,140 @@ local function createVisuals()
     statsLabel.Position = UDim2.new(0, 0, 0.5, 0)
     statsLabel.BackgroundTransparency = 1
     statsLabel.Font = Enum.Font.FredokaOne
+    statsLabel.TextSize = 14
+    statsLabel.TextStrokeTransparency = 0.1
+    statsLabel.TextStrokeColor3 = BOT_STROKE_COLOR
+    statsLabel.RichText = true
+    statsLabel.Parent = bg
+    
+    data.Highlight = hl
+    data.UI = bg
+    data.NameLabel = nameLabel
+    data.StatsLabel = statsLabel
+    
+    return data
+end
+
+-- Retorna o emoji exclusivo correspondente ao nome do monstro
+local function getBotEmoji(name)
+    local nameLower = string.lower(name)
+    for key, emoji in pairs(MONSTER_EMOJIS) do
+        if string.find(nameLower, key) then
+            return emoji
+        end
+    end
+    return "👾" -- Emoji padrão se não estiver mapeado
+end
+
+local function isBot(obj)
+    if not obj or not obj.Parent then return false end
+    if Players:GetPlayerFromCharacter(obj) or obj == localPlayer.Character then return false end
+    
+    local nameLower = string.lower(obj.Name)
+    
+    -- 1. Bloqueia rigorosamente falsos positivos (Ex: HumanoidCameraRig, MonsterBarrier)
+    for _, ignored in ipairs(IGNORED_NAMES) do
+        if string.find(nameLower, ignored) then return false end
+    end
+    
+    -- 2. Detecta se o nome está na lista com/sem T ou tentáculos/cobra
+    for monsterKey, _ in pairs(MONSTER_EMOJIS) do
+        if string.find(nameLower, monsterKey) then
+            return true
+        end
+    end
+    
+    return false
+end
+
+local function checkAndAddEntity(obj)
+    if not _G.SystemViewBotActive then return end
+    if (obj:IsA("Model") or obj:IsA("BasePart")) and not botCache[obj] then
+        if isBot(obj) then
+            botCache[obj] = createVisuals(obj)
+        end
+    end
+end
+
+-- ==========================================
+-- THREAD 1: DETECÇÃO EM TEMPO REAL E INICIAL
+-- ==========================================
+task.spawn(function()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if not _G.SystemViewBotActive then break end
+        checkAndAddEntity(obj)
+    end
+end)
+
+_G.SystemViewBotAddedConn = workspace.DescendantAdded:Connect(function(descendant)
+    if not _G.SystemViewBotActive then return end
+    
+    task.delay(0.2, function()
+        if descendant and descendant.Parent then
+            checkAndAddEntity(descendant)
+        end
+    end)
+end)
+
+-- ==========================================
+-- THREAD 2: LOOP DE RENDERIZAÇÃO
+-- ==========================================
+_G.SystemViewBotConnection = RunService.RenderStepped:Connect(function()
+    local myChar = localPlayer.Character
+    local myHRP = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Head"))
+    
+    if not myHRP then return end
+
+    for botEntity, vis in pairs(botCache) do
+        if not botEntity or not botEntity.Parent then
+            vis.Highlight:Destroy()
+            vis.UI:Destroy()
+            botCache[botEntity] = nil
+            continue
+        end
+
+        local head = botEntity:IsA("BasePart") and botEntity
+            or botEntity:FindFirstChild("Head") 
+            or botEntity:FindFirstChild("HumanoidRootPart") 
+            or botEntity.PrimaryPart 
+            or botEntity:FindFirstChildWhichIsA("BasePart")
+            
+        local hum = botEntity:FindFirstChildOfClass("Humanoid")
+        local isAlive = hum and (hum.Health > 0) or (not hum)
+        
+        if head and isAlive then
+            local dist = (myHRP.Position - head.Position).Magnitude
+            
+            if dist <= MAX_DISTANCE then
+                local fade = math.clamp((dist - FADE_START) / (MAX_DISTANCE - FADE_START), 0, 1)
+                
+                vis.Highlight.Parent = botEntity
+                vis.Highlight.OutlineTransparency = fade
+                
+                vis.UI.Adornee = head
+                vis.UI.Enabled = true
+                
+                vis.NameLabel.TextStrokeTransparency = fade
+                vis.StatsLabel.TextStrokeTransparency = fade
+                vis.NameLabel.TextTransparency = fade
+                vis.StatsLabel.TextTransparency = fade
+                
+                local hpText = hum and math.floor(hum.Health) or "100"
+                local emoji = getBotEmoji(botEntity.Name)
+                
+                -- Exibe o Emoji Exclusivo + Nome do Monstro exato do jogo
+                vis.NameLabel.Text = string.format('<font color="%s">%s %s</font>', BOT_NAME_COLOR, emoji, botEntity.Name)
+                vis.StatsLabel.Text = string.format('<font color="%s">📏 %dm</font> | <font color="%s">💖 %s</font>', DIST_COLOR, math.floor(dist), HP_COLOR, tostring(hpText))
+            else
+                vis.Highlight.Parent = nil
+                vis.UI.Enabled = false
+            end
+        else
+            vis.Highlight.Parent = nil
+            vis.UI.Enabled = false
+        end
+    end
+end)
     statsLabel.TextSize = 14
     statsLabel.TextStrokeTransparency = 0.1
     statsLabel.TextStrokeColor3 = BOT_STROKE_COLOR
