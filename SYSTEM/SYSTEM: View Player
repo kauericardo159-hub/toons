@@ -3,13 +3,13 @@ local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 
 -- ==========================================
--- SISTEMA DE TOGGLE (LIGA/DESLIGA)
+-- 🎈 SYSTEM VIEW PLAYER (TOONS UNIVERSE) 🎈
 -- ==========================================
+
+-- SISTEMA DE TOGGLE (LIGA / DESLIGA)
 if _G.SystemViewPlayerConnection then
     _G.SystemViewPlayerConnection:Disconnect()
     _G.SystemViewPlayerConnection = nil
-    
-    if _G.CleanupThread then task.cancel(_G.CleanupThread) end
     
     if _G.PlayerCacheViewPlayer then
         for _, visualData in pairs(_G.PlayerCacheViewPlayer) do
@@ -24,66 +24,79 @@ if _G.SystemViewPlayerConnection then
         _G.SystemViewPlayerFolder = nil
     end
     
-    print("[SYSTEM] View Player: DESATIVADO")
+    print("✨ [TOONS] View Player: DESATIVADO E LIMPO")
     return
 end
 
-print("[SYSTEM] View Player: ATIVADO")
+print("✨ [TOONS] View Player: ATIVADO")
 
 -- ==========================================
--- CONFIGURAÇÕES
+-- CONFIGURAÇÕES VISUAIS & CORES
 -- ==========================================
-local MAX_DISTANCE = 400
-local FADE_START = 250
-local LOW_HEALTH_THRESHOLD = 25 -- Porcentagem para começar a piscar
+local MAX_DISTANCE = 500
+local FADE_START = 350
+local LOW_HEALTH_THRESHOLD = 25 -- Porcentagem para o efeito de alerta
 
--- Cores
-local DIST_COLOR = "#C8C800" -- Amarelo
-local DEAD_COLOR = "#808080" -- Cinza
-local FRIEND_COLOR = "#00FF7F" -- Verde
-local FLASH_COLOR_1 = "#FFFFFF" -- Branco
-local FLASH_COLOR_2 = "#FF0000" -- Vermelho
+-- Cores Temáticas Toons Universe
+local COLOR_FRIEND = "#FFD264"      -- Amarelo Pastel (Amigos)
+local COLOR_PLAYER = "#FFFFFF"      -- Branco Puro
+local COLOR_DEAD = "#9696A0"        -- Cinza Opaco
+local COLOR_DIST = "#78C8FF"        -- Azul Pastel
+local COLOR_HP = "#50E68C"          -- Verde Menta
+local COLOR_LOW_HP = "#FF6482"      -- Rosa Chiclete / Alerta
+local STROKE_COLOR = Color3.fromRGB(20, 15, 45) -- Roxo Escuro Contorno
 
 _G.SystemViewPlayerFolder = Instance.new("Folder")
-_G.SystemViewPlayerFolder.Name = "ViewPlayerCache"
+_G.SystemViewPlayerFolder.Name = "ViewPlayerCache_Toons"
 _G.SystemViewPlayerFolder.Parent = localPlayer:WaitForChild("PlayerGui")
 
 _G.PlayerCacheViewPlayer = {}
 local localCache = _G.PlayerCacheViewPlayer
 
 -- ==========================================
--- FUNÇÕES AUXILIARES
+-- ESTRUTURA VISUAL DA INTERFACE
 -- ==========================================
-local function createVisuals(player)
+local function createVisuals()
     local data = {}
     
+    -- Contorno Mágico (Highlight)
     local hl = Instance.new("Highlight")
-    hl.Name = "ESP_Highlight"
-    hl.FillTransparency = 1
+    hl.Name = "PlayerOutline"
+    hl.FillColor = Color3.fromRGB(120, 200, 255)
+    hl.FillTransparency = 0.85
+    hl.OutlineColor = Color3.fromRGB(255, 120, 220)
     hl.OutlineTransparency = 0
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     
+    -- Placa Flutuante (BillboardGui)
     local bg = Instance.new("BillboardGui")
-    bg.Name = "ESP_UI"
-    bg.Size = UDim2.new(0, 200, 0, 50)
-    bg.StudsOffset = Vector3.new(0, 3, 0)
+    bg.Name = "PlayerInfoUI"
+    bg.Size = UDim2.new(0, 220, 0, 55)
+    bg.StudsOffset = Vector3.new(0, 3.5, 0)
     bg.AlwaysOnTop = true
+    bg.LightInfluence = 0
     bg.Parent = _G.SystemViewPlayerFolder
     
+    -- Rótulo do Nome do Player
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0.4, 0)
+    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 14
+    nameLabel.Font = Enum.Font.FredokaOne
+    nameLabel.TextSize = 16
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = STROKE_COLOR
     nameLabel.RichText = true
     nameLabel.Parent = bg
     
+    -- Rótulo das Estatísticas (Distância + Vida)
     local statsLabel = Instance.new("TextLabel")
-    statsLabel.Size = UDim2.new(1, 0, 0.4, 0)
-    statsLabel.Position = UDim2.new(0, 0, 0.4, 0)
+    statsLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    statsLabel.Position = UDim2.new(0, 0, 0.5, 0)
     statsLabel.BackgroundTransparency = 1
-    statsLabel.Font = Enum.Font.GothamMedium
-    statsLabel.TextSize = 13
+    statsLabel.Font = Enum.Font.FredokaOne
+    statsLabel.TextSize = 14
+    statsLabel.TextStrokeTransparency = 0.1
+    statsLabel.TextStrokeColor3 = STROKE_COLOR
     statsLabel.RichText = true
     statsLabel.Parent = bg
     
@@ -96,11 +109,11 @@ local function createVisuals(player)
 end
 
 -- ==========================================
--- LOOP DE RENDERIZAÇÃO
+-- LOOP DE ATUALIZAÇÃO (RENDER STEPPED)
 -- ==========================================
 _G.SystemViewPlayerConnection = RunService.RenderStepped:Connect(function()
     local myChar = localPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local myHRP = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Head"))
     
     if not myHRP then return end
     
@@ -109,60 +122,52 @@ _G.SystemViewPlayerConnection = RunService.RenderStepped:Connect(function()
         
         local char = p.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Head"))
         
         if char and hum and root then
             local dist = (myHRP.Position - root.Position).Magnitude
             
             if dist <= MAX_DISTANCE then
-                if not localCache[p] then localCache[p] = createVisuals(p) end
+                if not localCache[p] then localCache[p] = createVisuals() end
                 local vis = localCache[p]
                 
-                -- Lógica de Vida e Cores
+                -- Lógica de Estado de Vida
                 local isDead = hum.Health <= 0
-                local isLowHealth = hum.Health > 0 and hum.Health < (hum.MaxHealth * (LOW_HEALTH_THRESHOLD/100))
+                local isLowHealth = not isDead and (hum.Health < (hum.MaxHealth * (LOW_HEALTH_THRESHOLD / 100)))
                 
-                -- Efeito de Piscar (Flash)
-                local hpColorHex = "#00FF00" -- Verde padrão
-                if isDead then
-                    hpColorHex = DEAD_COLOR
-                elseif isLowHealth then
-                    -- Alterna entre as cores de flash com base no tempo
-                    hpColorHex = (math.sin(tick() * 10) > 0) and FLASH_COLOR_1 or FLASH_COLOR_2
-                else
-                    hpColorHex = "#FF4545" -- Vermelho normal de vida
-                end
+                -- Cores de Exibição
+                local hpColorHex = isDead and COLOR_DEAD or (isLowHealth and ((math.sin(tick() * 10) > 0) and "#FFFFFF" or COLOR_LOW_HP) or COLOR_HP)
+                local isFriend = p:IsFriendsWith(localPlayer.UserId)
+                local nameColorHex = isDead and COLOR_DEAD or (isFriend and COLOR_FRIEND or COLOR_PLAYER)
                 
-                -- Cores de Nome
-                local nameColor = p:IsFriendsWith(localPlayer.UserId) and FRIEND_COLOR or "#FFFFFF"
-                if isDead then nameColor = DEAD_COLOR end
-                
-                -- Transparência por Distância
+                -- Opacidade por Distância
                 local fade = math.clamp((dist - FADE_START) / (MAX_DISTANCE - FADE_START), 0, 1)
                 local transparency = isDead and 0.5 or fade
                 
-                -- Atualizar Highlight
+                -- Atualização do Highlight
                 vis.Highlight.Parent = char
-                vis.Highlight.OutlineColor = isDead and Color3.fromHex(DEAD_COLOR) or (p.TeamColor and p.TeamColor.Color or Color3.new(1,1,1))
                 vis.Highlight.OutlineTransparency = transparency
+                vis.Highlight.OutlineColor = isDead and Color3.fromHex(COLOR_DEAD) or (isFriend and Color3.fromHex(COLOR_FRIEND) or Color3.fromRGB(255, 120, 220))
                 
-                -- Atualizar UI
+                -- Atualização do BillboardGui
                 vis.UI.Adornee = char:FindFirstChild("Head") or root
                 vis.UI.Enabled = true
                 
-                -- Nome e Status
-                local emoji = isDead and "💀" or (p:IsFriendsWith(localPlayer.UserId) and "👥" or "👤")
+                -- Texto e Ícones
+                local icon = isDead and "💀" or (isFriend and "⭐" or "👤")
                 
-                vis.NameLabel.Text = string.format('<font color="%s">%s %s</font>', nameColor, emoji, p.DisplayName)
-                vis.StatsLabel.Text = string.format('<font color="%s">%dm</font> | <font color="%s">HP: %d</font>', 
-                    isDead and DEAD_COLOR or DIST_COLOR, 
+                vis.NameLabel.Text = string.format('<font color="%s">%s %s</font>', nameColorHex, icon, p.DisplayName)
+                vis.StatsLabel.Text = string.format('<font color="%s">📍 %dm</font>  |  <font color="%s">💖 %d</font>', 
+                    isDead and COLOR_DEAD or COLOR_DIST, 
                     math.floor(dist), 
                     hpColorHex, 
-                    math.floor(hum.Health)
+                    math.max(0, math.floor(hum.Health))
                 )
                 
                 vis.NameLabel.TextTransparency = transparency
                 vis.StatsLabel.TextTransparency = transparency
+                vis.NameLabel.TextStrokeTransparency = transparency
+                vis.StatsLabel.TextStrokeTransparency = transparency
             else
                 if localCache[p] then
                     localCache[p].UI.Enabled = false
@@ -170,7 +175,6 @@ _G.SystemViewPlayerConnection = RunService.RenderStepped:Connect(function()
                 end
             end
         else
-            -- Limpeza se o personagem sumir
             if localCache[p] then
                 localCache[p].UI.Enabled = false
                 localCache[p].Highlight.Parent = nil
@@ -179,7 +183,7 @@ _G.SystemViewPlayerConnection = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Limpeza ao sair do player
+-- Limpeza de memória se o jogador sair do servidor
 Players.PlayerRemoving:Connect(function(p)
     if localCache[p] then
         if localCache[p].Highlight then localCache[p].Highlight:Destroy() end
@@ -187,3 +191,4 @@ Players.PlayerRemoving:Connect(function(p)
         localCache[p] = nil
     end
 end)
+
