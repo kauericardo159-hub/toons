@@ -1,0 +1,47 @@
+--[[ 
+===========================================================
+    🎈 CARREGAMENTO DO PAINEL TOONS UNIVERSE (NOVO) 🎈
+===========================================================
+]]
+
+print("🚀 Iniciando sistema Toons Universe...")
+
+-- 0. GERENCIADOR DE NOTIFICAÇÕES (Carrega primeiro para estar disponível)
+print("✨ Carregando NotificationManager...")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kauericardo159-hub/toons/refs/heads/main/%F0%9F%93%9C%3A%20NotificationManager.lua"))()
+task.wait(0.5)
+
+-- 1. INTERFACE DO PAINEL (Coração da Interface)
+print("✨ Carregando PanelInterface...")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kauericardo159-hub/toons/refs/heads/main/%F0%9F%93%9C%3A%20PanelInterface.lua"))()
+
+-- Aguarda a criação da interface base antes de continuar
+local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+playerGui:WaitForChild("SistemaPainel_Toons")
+task.wait(0.5)
+
+-- 2. GERENCIADOR DA LISTA (Estrutura dos Minipainéis)
+print("✨ Carregando ListManager...")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kauericardo159-hub/toons/refs/heads/main/%F0%9F%93%9C%3A%20ListManager.lua"))()
+task.wait(0.5)
+
+-- 3. CONTROLADOR DO BOTÃO (Abrir/Fechar & Drag)
+print("✨ Carregando ButtonController...")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kauericardo159-hub/toons/refs/heads/main/%F0%9F%93%9C%3A%20ButtonController.lua"))()
+task.wait(0.5)
+
+--[[ 
+   📦 CARREGAMENTO DE MINIPAINÉIS
+]]
+
+-- 4. MINI-PAINEL: VIEW PLAYER & BOT
+print("✅ Carregando MiniPanel: View Player & Bot...")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kauericardo159-hub/toons/refs/heads/main/Minipainel/MiniPanel%3A%20View%20Player%20%26%20Bot"))()
+
+print("✨ Painel Toons Universe Carregado com Sucesso!")
+
+-- Notificação Inicial de Boas-Vindas
+if _G.NotifyElite then
+    _G.NotifyElite("TOONS UNIVERSE", "Painel carregado com sucesso!", true)
+end
+
