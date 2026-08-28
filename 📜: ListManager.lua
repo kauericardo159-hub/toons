@@ -71,8 +71,8 @@ padding.PaddingLeft = UDim.new(0, 10)
 padding.PaddingRight = UDim.new(0, 10)
 padding.Parent = listaContainer
 
--- 5. GERADOR DE CARDS DE OPÇÃO (Estilo Botão Toon)
-local function criarItemLista(id, titulo, iconeId)
+-- 5. GERADOR GLOBAL DE CARDS DE OPÇÃO (Para Minipainéis Externos)
+_G.AddToonListItem = function(id, titulo, iconeId, callback)
     local itemFrame = Instance.new("Frame")
     itemFrame.Name = "Item_" .. tostring(id)
     itemFrame.Size = UDim2.new(1, 0, 0, 48)
@@ -126,7 +126,7 @@ local function criarItemLista(id, titulo, iconeId)
     clickButton.Text = ""
     clickButton.Parent = itemFrame
 
-    -- Animação de Hover e Clique (Elastic / Pop)
+    -- Animação de Hover e Clique
     clickButton.MouseEnter:Connect(function()
         TweenService:Create(itemFrame, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, 4, 0, 50),
@@ -148,7 +148,6 @@ local function criarItemLista(id, titulo, iconeId)
     end)
 
     clickButton.MouseButton1Click:Connect(function()
-        -- Efeito de Pressionar
         local pressTween = TweenService:Create(itemFrame, TweenInfo.new(0.08), {
             Size = UDim2.new(0.95, 0, 0, 44)
         })
@@ -159,7 +158,9 @@ local function criarItemLista(id, titulo, iconeId)
             Size = UDim2.new(1, 0, 0, 48)
         }):Play()
 
-        print("👉 Opção selecionada: " .. titulo)
+        if callback then
+            callback()
+        end
     end)
 
     return itemFrame
@@ -184,13 +185,7 @@ local function animateListItems()
     end
 end
 
--- 7. EXEMPLOS DE ITENS PADRÃO
-criarItemLista(1, "Loja Mágica", "rbxassetid://6031097225")
-criarItemLista(2, "Inventário", "rbxassetid://6031097225")
-criarItemLista(3, "Missões Toon", "rbxassetid://6031097225")
-criarItemLista(4, "Configurações", "rbxassetid://6031097225")
-
--- 8. SINCRONIZAÇÃO E REDIMENSIONAMENTO
+-- 7. SINCRONIZAÇÃO E REDIMENSIONAMENTO
 layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     listaContainer.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 24)
 end)
@@ -212,5 +207,5 @@ task.spawn(function()
     end
 end)
 
-print("✨ ListManager Toons Universe carregado com sucesso!")
+print("✨ ListManager Toons Universe pronto para receber minipainéis!")
 
